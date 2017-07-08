@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
 				<< std::endl;
 			return 1;
 		}
-		EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
+		EShMessages messages = (EShMessages)(EShMsgAST| EShMsgSpvRules | EShMsgVulkanRules);
 		TBuiltInResource resources;
 		InitializeResources(resources);
 		const char* shader_content_c_str[1];
@@ -142,7 +142,6 @@ int main(int argc, char** argv) {
 			std::cout << p_shader->getInfoDebugLog() << std::endl;
 			return 1;
 		}
-
 		glslang::TProgram program;
 		program.addShader(p_shader);
 		if (!program.link(messages)) {
@@ -157,13 +156,28 @@ int main(int argc, char** argv) {
 				<< std::endl;
 			return 1;
 		}
-		
+
+		std::cout << "Attributes:" << std::endl;
 		auto attributes_size = program.getNumLiveAttributes();
 		for (int i = 0; i < attributes_size; ++i) {
 			std::cout << program.getAttributeName(i) << std::endl;
 			std::cout << program.getAttributeType(i) << std::endl;
 			const auto& type = program.getAttributeTType(i);
 			std::cout << type->getVectorSize() << std::endl;
+			const auto& qualifier = type->getQualifier();
+			std::cout << "binding: " << qualifier.layoutBinding << std::endl;
+			std::cout << "location: " << qualifier.layoutLocation << std::endl << std::endl;
+		}
+
+		std::cout << std::endl << "UniformBlocks:" << std::endl;
+		auto uniforms_size = program.getNumLiveUniformBlocks();
+		for (int i = 0; i < uniforms_size; ++i) {
+			std::cout << program.getUniformBlockName(i) << std::endl;
+			std::cout << "block size:" << program.getUniformBlockSize(i) << std::endl << std::endl;
+			const auto& type = program.getUniformBlockTType(i);
+			const auto& qualifier = type->getQualifier();
+			std::cout << "binding: " << qualifier.layoutBinding << std::endl;
+			std::cout << "location: " << qualifier.layoutLocation << std::endl << std::endl;
 		}
 
 		glslang::FinalizeProcess();
