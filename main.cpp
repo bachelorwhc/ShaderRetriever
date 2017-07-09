@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
 				<< std::endl;
 			return 1;
 		}
-		EShMessages messages = (EShMessages)(EShMsgAST| EShMsgSpvRules | EShMsgVulkanRules);
+		EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
 		TBuiltInResource resources;
 		InitializeResources(resources);
 		const char* shader_content_c_str[1];
@@ -147,7 +147,7 @@ int main(int argc, char** argv) {
 		if (!program.link(messages)) {
 			std::cout << p_shader->getInfoLog() << std::endl;
 			std::cout << p_shader->getInfoDebugLog() << std::endl;
-			return false;
+			return 1;
 		}
 		if (!program.buildReflection()) {
 			std::cout
@@ -165,19 +165,29 @@ int main(int argc, char** argv) {
 			const auto& type = program.getAttributeTType(i);
 			std::cout << type->getVectorSize() << std::endl;
 			const auto& qualifier = type->getQualifier();
-			std::cout << "binding: " << qualifier.layoutBinding << std::endl;
-			std::cout << "location: " << qualifier.layoutLocation << std::endl << std::endl;
+			if (qualifier.hasBinding())
+				std::cout << "binding: " << qualifier.layoutBinding << std::endl;
+			if (qualifier.hasLocation())
+				std::cout << "location: " << qualifier.layoutLocation << std::endl;
+			if (qualifier.layoutPushConstant)
+				std::cout << "PushConstant" << std::endl;
+			std::cout << std::endl;
 		}
 
 		std::cout << std::endl << "UniformBlocks:" << std::endl;
 		auto uniforms_size = program.getNumLiveUniformBlocks();
 		for (int i = 0; i < uniforms_size; ++i) {
 			std::cout << program.getUniformBlockName(i) << std::endl;
-			std::cout << "block size:" << program.getUniformBlockSize(i) << std::endl << std::endl;
+			std::cout << "block size:" << program.getUniformBlockSize(i) << std::endl;
 			const auto& type = program.getUniformBlockTType(i);
 			const auto& qualifier = type->getQualifier();
-			std::cout << "binding: " << qualifier.layoutBinding << std::endl;
-			std::cout << "location: " << qualifier.layoutLocation << std::endl << std::endl;
+			if(qualifier.hasBinding())
+				std::cout << "binding: " << qualifier.layoutBinding << std::endl;
+			if (qualifier.hasLocation())
+				std::cout << "location: " << qualifier.layoutLocation << std::endl;
+			if (qualifier.layoutPushConstant)
+				std::cout << "PushConstant" << std::endl;
+			std::cout << std::endl;
 		}
 
 		glslang::FinalizeProcess();

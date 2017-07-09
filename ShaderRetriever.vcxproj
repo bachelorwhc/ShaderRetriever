@@ -12,6 +12,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="src\gl2vulkan.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\gl2vulkan.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{1e0b53c8-d033-451a-82fd-c35c9dd1065f}</ProjectGuid>
@@ -49,14 +53,14 @@
     <IntDir>$(SolutionDir)inter\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)$(Platform)</TargetName>
     <LibraryPath>$(SolutionDir)lib\$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir)third_party/;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)third_party/;$(VK_SDK_PATH)/Include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)executable\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)inter\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)$(Platform)</TargetName>
     <LibraryPath>$(SolutionDir)lib\$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir)third_party/;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)third_party/;$(VK_SDK_PATH)/Include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
