@@ -16,6 +16,7 @@
     <ClCompile Include="src\init_resources.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\config.h" />
     <ClInclude Include="src\gl2vulkan.h" />
     <ClInclude Include="src\init_resources.h" />
   </ItemGroup>
