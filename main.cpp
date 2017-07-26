@@ -195,7 +195,7 @@ int main(int argc, char** argv) {
 		WriteUniformVariablesJSON(program, conf_json);
 
 		std::vector<unsigned int> spirv;
-		glslang::GlslangToSpv(*program.getIntermediate(stage), spirv);
+		//glslang::GlslangToSpv(*program.getIntermediate(stage), spirv);
 
 		glslang::FinalizeProcess();
 
