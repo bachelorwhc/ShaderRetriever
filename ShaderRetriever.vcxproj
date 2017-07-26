@@ -90,6 +90,7 @@
     <TargetName>$(ProjectName)$(Platform)</TargetName>
     <LibraryPath>$(SolutionDir)lib/$(Platform)/$(Configuration);$(LibraryPath)</LibraryPath>
     <IncludePath>$(SolutionDir)third_party/;$(VK_SDK_PATH)/Include;$(VK_SDK_PATH)/glslang/glslang/Include;$(VK_SDK_PATH)/glslang/glslang/Public;$(VK_SDK_PATH)/glslang/SPIRV;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)executable\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)executable\$(Configuration)\</OutDir>
@@ -103,6 +104,7 @@
     <TargetName>$(ProjectName)$(Platform)</TargetName>
     <LibraryPath>$(SolutionDir)lib/$(Platform)/$(Configuration);$(LibraryPath)</LibraryPath>
     <IncludePath>$(SolutionDir)third_party/;$(VK_SDK_PATH)/Include;$(VK_SDK_PATH)/glslang/glslang/Include;$(VK_SDK_PATH)/glslang/glslang/Public;$(VK_SDK_PATH)/glslang/SPIRV;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)executable\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
