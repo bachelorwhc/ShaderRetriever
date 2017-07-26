@@ -181,7 +181,6 @@ int main(int argc, char** argv) {
 			c_srcs.push_back(s.c_str());
 		}
 		p_shader->setStrings(c_srcs.data(), c_srcs.size());
-
 		assert(ParseShader(p_shader));
 
 		glslang::TProgram program;
