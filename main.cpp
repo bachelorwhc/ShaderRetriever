@@ -7,8 +7,9 @@
 #include <cassert>
 #include <map>
 #include <vector>
-#include <glslang/ShaderLang.h>
-#include <glslang/Types.h>
+#include <ShaderLang.h>
+#include <Types.h>
+#include <GlslangToSpv.h>
 #include <json.hpp>
 #include "init_resources.h"
 #include "gl2vulkan.h"
@@ -98,19 +99,20 @@ void WriteUniformVariablesJSON(const glslang::TProgram& program, JSON& config_js
 		config_json["uniform_blocks"] = uniform_variables_json;
 }
 
-void CreateShader(Config::OptionValue stage, glslang::TShader*& p_shader) {
+EShLanguage GetStage(Config::OptionValue stage) {
 	switch (stage)
 	{
 	case Config::VERTEX:
-		p_shader = new(std::nothrow) glslang::TShader(EShLanguage::EShLangVertex);
-		break;
+		return EShLanguage::EShLangVertex;
 	case Config::FRAGMENT:
-		p_shader = new(std::nothrow) glslang::TShader(EShLanguage::EShLangFragment);
-		break;
+		return EShLanguage::EShLangFragment;
 	default:
 		throw std::runtime_error("stage is not mapped.");
-		break;
 	}
+}
+
+void CreateShader(EShLanguage stage, glslang::TShader*& p_shader) {
+	p_shader = new(std::nothrow) glslang::TShader(stage);
 }
 
 std::vector<std::string> LoadShaderSoruces(std::vector<std::string> file_paths) {
@@ -163,7 +165,7 @@ int main(int argc, char** argv) {
 	try {
 		Config config(argc, argv);
 		glslang::InitializeProcess();
-		auto stage = config.getStage();
+		auto stage = GetStage(config.getStage());
 		CreateShader(stage, p_shader);
 		if (p_shader == nullptr) {
 			std::cout
@@ -191,6 +193,9 @@ int main(int argc, char** argv) {
 		WriteAttributesJSON(program, conf_json, config.isVulkanDef());
 		WriteUniformBlocksJSON(program, conf_json);
 		WriteUniformVariablesJSON(program, conf_json);
+
+		std::vector<unsigned int> spirv;
+		glslang::GlslangToSpv(*program.getIntermediate(stage), spirv);
 
 		glslang::FinalizeProcess();
 

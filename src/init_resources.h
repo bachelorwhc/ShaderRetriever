@@ -1,3 +1,3 @@
 #pragma once
-#include <glslang/ResourceLimits.h>
+#include <ResourceLimits.h>
 void InitializeResources(TBuiltInResource& resources);

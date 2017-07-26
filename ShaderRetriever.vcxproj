@@ -55,15 +55,15 @@
     <OutDir>$(SolutionDir)executable\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)inter\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)$(Platform)</TargetName>
-    <LibraryPath>$(SolutionDir)lib\$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir)third_party/;$(VK_SDK_PATH)/Include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)lib/$(Platform)/$(Configuration);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)third_party/;$(VK_SDK_PATH)/Include;$(VK_SDK_PATH)/glslang/glslang/Include;$(VK_SDK_PATH)/glslang/glslang/Public;$(VK_SDK_PATH)/glslang/SPIRV;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)executable\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)inter\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)$(Platform)</TargetName>
-    <LibraryPath>$(SolutionDir)lib\$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir)third_party/;$(VK_SDK_PATH)/Include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)lib/$(Platform)/$(Configuration);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)third_party/;$(VK_SDK_PATH)/Include;$(VK_SDK_PATH)/glslang/glslang/Include;$(VK_SDK_PATH)/glslang/glslang/Public;$(VK_SDK_PATH)/glslang/SPIRV;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -74,7 +74,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)src/</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>glslang.lib;OSDependent.lib;OGLCompiler.lib;HLSL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glslang.lib;OSDependent.lib;OGLCompiler.lib;HLSL.lib;SPIRV.lib;SPVRemapper.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -90,7 +90,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>glslang.lib;OSDependent.lib;OGLCompiler.lib;HLSL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glslang.lib;OSDependent.lib;OGLCompiler.lib;HLSL.lib;SPIRV.lib;SPVRemapper.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
