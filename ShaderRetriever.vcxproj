@@ -21,12 +21,11 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="src\gl2vulkan.cpp" />
-    <ClCompile Include="src\init_resources.cpp" />
+    <ClCompile Include="src\resource_limits.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\config.h" />
     <ClInclude Include="src\gl2vulkan.h" />
-    <ClInclude Include="src\init_resources.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{1e0b53c8-d033-451a-82fd-c35c9dd1065f}</ProjectGuid>
@@ -83,13 +82,13 @@
     <IntDir>$(SolutionDir)inter\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)$(Platform)</TargetName>
     <LibraryPath>$(SolutionDir)lib/$(Platform)/$(Configuration);$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir)third_party/;$(VK_SDK_PATH)/Include;$(VK_SDK_PATH)/glslang/glslang/Include;$(VK_SDK_PATH)/glslang/glslang/Public;$(VK_SDK_PATH)/glslang/SPIRV;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)third_party/;$(VK_SDK_PATH)/Include;$(VK_SDK_PATH)/glslang/glslang/Public;$(VK_SDK_PATH)/glslang/glslang/Include;$(VK_SDK_PATH)/glslang/SPIRV;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IntDir>$(SolutionDir)inter\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)$(Platform)</TargetName>
     <LibraryPath>$(SolutionDir)lib/$(Platform)/$(Configuration);$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir)third_party/;$(VK_SDK_PATH)/Include;$(VK_SDK_PATH)/glslang/glslang/Include;$(VK_SDK_PATH)/glslang/glslang/Public;$(VK_SDK_PATH)/glslang/SPIRV;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)third_party/;$(VK_SDK_PATH)/Include;$(VK_SDK_PATH)/glslang/glslang/Public;$(VK_SDK_PATH)/glslang/glslang/Include;$(VK_SDK_PATH)/glslang/SPIRV;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)executable\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -97,13 +96,13 @@
     <IntDir>$(SolutionDir)inter\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)$(Platform)</TargetName>
     <LibraryPath>$(SolutionDir)lib/$(Platform)/$(Configuration);$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir)third_party/;$(VK_SDK_PATH)/Include;$(VK_SDK_PATH)/glslang/glslang/Include;$(VK_SDK_PATH)/glslang/glslang/Public;$(VK_SDK_PATH)/glslang/SPIRV;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)third_party/;$(VK_SDK_PATH)/Include;$(VK_SDK_PATH)/glslang/glslang/Public;$(VK_SDK_PATH)/glslang/glslang/Include;$(VK_SDK_PATH)/glslang/SPIRV;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IntDir>$(SolutionDir)inter\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)$(Platform)</TargetName>
     <LibraryPath>$(SolutionDir)lib/$(Platform)/$(Configuration);$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir)third_party/;$(VK_SDK_PATH)/Include;$(VK_SDK_PATH)/glslang/glslang/Include;$(VK_SDK_PATH)/glslang/glslang/Public;$(VK_SDK_PATH)/glslang/SPIRV;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)third_party/;$(VK_SDK_PATH)/Include;$(VK_SDK_PATH)/glslang/glslang/Public;$(VK_SDK_PATH)/glslang/glslang/Include;$(VK_SDK_PATH)/glslang/SPIRV;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)executable\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -113,9 +112,10 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalIncludeDirectories>$(SolutionDir)src/</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>GLSLANG_OSINCLUDE_WIN32;AMD_EXTENSIONS;NV_EXTENSIONS</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>glslang.lib;OSDependent.lib;OGLCompiler.lib;SPIRV.lib;HLSL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glslang.lib;SPIRV.lib;SPVRemapper.lib;psapi.lib;OGLCompiler.lib;OSDependent.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -125,9 +125,10 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalIncludeDirectories>$(SolutionDir)src/</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>GLSLANG_OSINCLUDE_WIN32;AMD_EXTENSIONS;NV_EXTENSIONS</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>glslang.lib;OSDependent.lib;OGLCompiler.lib;SPIRV.lib;HLSL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glslang.lib;SPIRV.lib;SPVRemapper.lib;psapi.lib;OGLCompiler.lib;OSDependent.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -139,11 +140,12 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalIncludeDirectories>$(SolutionDir)src/</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>GLSLANG_OSINCLUDE_WIN32;AMD_EXTENSIONS;NV_EXTENSIONS</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>glslang.lib;OSDependent.lib;OGLCompiler.lib;SPIRV.lib;HLSL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glslang.lib;SPIRV.lib;SPVRemapper.lib;psapi.lib;OGLCompiler.lib;OSDependent.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -155,11 +157,12 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalIncludeDirectories>$(SolutionDir)src/</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>GLSLANG_OSINCLUDE_WIN32;AMD_EXTENSIONS;NV_EXTENSIONS</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>glslang.lib;OSDependent.lib;OGLCompiler.lib;SPIRV.lib;HLSL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glslang.lib;SPIRV.lib;SPVRemapper.lib;psapi.lib;OGLCompiler.lib;OSDependent.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

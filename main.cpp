@@ -8,10 +8,8 @@
 #include <map>
 #include <vector>
 #include <ShaderLang.h>
-#include <Types.h>
 #include <GlslangToSpv.h>
 #include <json.hpp>
-#include "init_resources.h"
 #include "gl2vulkan.h"
 #include "config.h"
 
@@ -123,9 +121,6 @@ std::vector<std::string> LoadShaderSoruces(std::vector<std::string> file_paths) 
 			break;
 		}
 
-		EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
-		TBuiltInResource resources;
-		InitializeResources(resources);
 		std::string shader_content(
 			(std::istreambuf_iterator<char>(file)),
 			std::istreambuf_iterator<char>()
@@ -137,11 +132,9 @@ std::vector<std::string> LoadShaderSoruces(std::vector<std::string> file_paths) 
 }
 
 bool ParseShader(glslang::TShader* p_shader) {
-	EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
-	TBuiltInResource resources;
-	InitializeResources(resources);
+	EShMessages messages = (EShMessages)(EShMsgDefault | EShMsgSpvRules | EShMsgVulkanRules);
 
-	if (!p_shader->parse(&resources, 100, false, messages)) {
+	if (!p_shader->parse(&DefaultTBuiltInResource, 100, false, messages)) {
 		std::cout << p_shader->getInfoLog() << std::endl;
 		std::cout << p_shader->getInfoDebugLog() << std::endl;
 		return false;
@@ -150,7 +143,7 @@ bool ParseShader(glslang::TShader* p_shader) {
 }
 
 bool InitializeProgram(glslang::TProgram& program) {
-	EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
+	EShMessages messages = (EShMessages)(EShMsgDefault | EShMsgSpvRules | EShMsgVulkanRules);
 	if (!program.link(messages)) {
 		return false;
 	}
@@ -181,6 +174,15 @@ int main(int argc, char** argv) {
 			c_srcs.push_back(s.c_str());
 		}
 		p_shader->setStrings(c_srcs.data(), c_srcs.size());
+
+		p_shader->setEnvInput(
+			glslang::EShSourceGlsl,
+			stage,
+			glslang::EShClientVulkan,
+			450
+		);
+		p_shader->setEnvClient(glslang::EShClientVulkan, 100);
+		p_shader->setEnvTarget(glslang::EshTargetSpv, 0x00001000);
 		assert(ParseShader(p_shader));
 
 		glslang::TProgram program;

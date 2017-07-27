@@ -21,15 +21,12 @@
     <ClCompile Include="src\gl2vulkan.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\init_resources.cpp">
+    <ClCompile Include="src\resource_limits.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\gl2vulkan.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\init_resources.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\config.h">

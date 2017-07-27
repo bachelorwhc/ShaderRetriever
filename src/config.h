@@ -3,6 +3,9 @@
 #include <vector>
 #include <exception>
 #include <map>
+#include <ResourceLimits.h>
+
+extern const TBuiltInResource DefaultTBuiltInResource;
 
 class Config {
 public:
