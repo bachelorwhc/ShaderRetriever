@@ -79,7 +79,8 @@ public:
 		return UNKNOWN;
 	}
 	std::string getInputFilename() const { return m_input; }
-	std::string getOutputFilename() const { return m_output; }
+	std::string getShaderInfoFilename() const { return m_output + ".sri"; }
+	std::string getShaderBinFilename() const { return m_output + ".sr"; }
 
 private:
 	void setOption(const std::vector<std::string>& arguments) {

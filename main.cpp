@@ -153,6 +153,19 @@ bool InitializeProgram(glslang::TProgram& program) {
 	return true;
 }
 
+void ConfigureShader(glslang::TShader* const p_shader, EShLanguage stage) {
+	p_shader->setEnvInput(
+		glslang::EShSourceGlsl,
+		stage,
+		glslang::EShClientVulkan,
+		450
+	);
+	p_shader->setEnvClient(glslang::EShClientVulkan, 100);
+	p_shader->setEnvTarget(glslang::EshTargetSpv, 0x00001000);
+	bool result = ParseShader(p_shader);
+	assert(result);
+}
+
 int main(int argc, char** argv) {
 	glslang::TShader* p_shader = nullptr;
 	try {
@@ -175,19 +188,13 @@ int main(int argc, char** argv) {
 		}
 		p_shader->setStrings(c_srcs.data(), c_srcs.size());
 
-		p_shader->setEnvInput(
-			glslang::EShSourceGlsl,
-			stage,
-			glslang::EShClientVulkan,
-			450
-		);
-		p_shader->setEnvClient(glslang::EShClientVulkan, 100);
-		p_shader->setEnvTarget(glslang::EshTargetSpv, 0x00001000);
-		assert(ParseShader(p_shader));
+		ConfigureShader(p_shader, stage);
 
 		glslang::TProgram program;
+
 		program.addShader(p_shader);
-		assert(InitializeProgram(program));
+		bool result = InitializeProgram(program);
+		assert(result);
 		
 		JSON conf_json;
 
@@ -200,15 +207,19 @@ int main(int argc, char** argv) {
 
 		glslang::FinalizeProcess();
 
-		std::ofstream output_file(config.getOutputFilename());
-		if(!output_file.is_open()) {
+		std::ofstream sri_file(config.getShaderInfoFilename());
+		std::ofstream sr_file(config.getShaderBinFilename(), std::ios::binary);
+		if(!sri_file.is_open() || !sr_file.is_open()) {
 			std::cout
 				<< "Something is going wrong,"
 				<< "file can not be loaded!"
 				<< std::endl;
 			return 1;
 		}
-		output_file << std::setw(4) << conf_json;
+		sr_file.write((char*)spirv.data(), spirv.size() * sizeof(unsigned int));
+		sri_file << std::setw(4) << conf_json;
+		sri_file.close();
+		sr_file.close();
 	}
 	catch(std::runtime_error& error) {
 		std::cout << error.what() << std::endl;
