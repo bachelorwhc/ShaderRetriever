@@ -63,9 +63,15 @@ void WriteUniformBlocksJSON(const glslang::TProgram& program, JSON& config_json)
 		const auto& type = program.getUniformBlockTType(i);
 		WriteBasicType(uniform_blk_json, *type);
 
+        auto offset = program.getUniformBufferOffset(i);
+        if (offset >= 0) {
+            uniform_blk_json["offset"] = offset;
+        }
+
 		const auto& qualifier = type->getQualifier();
 		SetQualifier(qualifier, uniform_blk_json);
 
+        auto name = program.getUniformBlockName(i);
 		uniform_blocks_json[program.getUniformBlockName(i)] = uniform_blk_json;
 	}
 	if (uniform_blks_size > 0)
@@ -88,13 +94,25 @@ void WriteUniformVariablesJSON(const glslang::TProgram& program, JSON& config_js
 			uniform_var_json["sampler"] = sampler_json;
 		}
 
+        auto offset = program.getUniformBufferOffset(i);
+        if (offset >= 0) {
+            uniform_var_json["offset"] = offset;
+        }
+
+        auto index = program.getUniformBlockIndex(i);
+        if (index >= 0) {
+            uniform_var_json["index"] = index;
+            auto block = program.getUniformBlockName(index);
+            uniform_var_json["block_name"] = block;
+        }
+
 		const auto& qualifier = type->getQualifier();
 		SetQualifier(qualifier, uniform_var_json);
 
 		uniform_variables_json[program.getUniformName(i)] = uniform_var_json;
 	}
 	if (uniform_vars_size > 0)
-		config_json["uniform_blocks"] = uniform_variables_json;
+		config_json["uniform_variables"] = uniform_variables_json;
 }
 
 void CreateShader(EShLanguage stage, glslang::TShader*& p_shader) {
@@ -120,7 +138,7 @@ std::vector<std::string> LoadShaderSoruces(std::vector<std::string> file_paths) 
 }
 
 bool ParseShader(glslang::TShader* p_shader, const EShMessages e_messages) {
-	if (!p_shader->parse(&DefaultTBuiltInResource, 100, true, e_messages)) {
+	if (!p_shader->parse(&DefaultTBuiltInResource, 100, false, e_messages)) {
 		std::cout << p_shader->getInfoLog() << std::endl;
 		std::cout << p_shader->getInfoDebugLog() << std::endl;
 		return false;
@@ -139,6 +157,7 @@ bool InitializeProgram(glslang::TProgram& program, const EShMessages e_messages)
         std::cout << program.getInfoDebugLog() << std::endl;
 		return false;
 	}
+    program.dumpReflection();
 	return true;
 }
 
