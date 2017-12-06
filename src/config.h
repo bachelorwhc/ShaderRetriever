@@ -3,6 +3,8 @@
 #include <vector>
 #include <exception>
 #include <map>
+#include <cassert>
+#include <ShaderLang.h>
 #include <ResourceLimits.h>
 
 extern const TBuiltInResource DefaultTBuiltInResource;
@@ -17,6 +19,7 @@ public:
 		UNKNOWN,
 		OPENGL,
 		VULKAN,
+        HLSL,
 		VERTEX,
 		FRAGMENT
 	};
@@ -57,6 +60,19 @@ public:
 		if (isUnset(STAGE)) {
 			throw std::runtime_error("stage should be set.");
 		}
+
+        switch (m_options[DEF])
+        {
+        case VULKAN:
+            m_messages = (EShMessages)((unsigned long)m_messages | EShMsgSpvRules | EShMsgVulkanRules);
+            break;
+        case HLSL:
+            m_messages = (EShMessages)((unsigned long)m_messages | EShMsgReadHlsl | EShMsgHlslOffsets);
+            break;
+        default:
+            assert(true);
+            break;
+        }
 	}
 
 	~Config() {
@@ -67,20 +83,38 @@ public:
 		if (m_options.count(DEF) > 0)
 			return m_options.find(DEF)->second == VULKAN;
 		else
-			throw std::runtime_error("stage should be set.");
+			throw std::runtime_error("language should be set.");
 		return false;
 	}
 
-	OptionValue getStage() const {
-		if (m_options.count(STAGE) > 0)
-			return m_options.find(STAGE)->second;
+    bool isHLSLDef() const {
+        if (m_options.count(DEF) > 0)
+            return m_options.find(DEF)->second == HLSL;
+        else
+            throw std::runtime_error("language should be set.");
+        return false;
+    }
+
+    EShLanguage getStage() const {
+		if (m_options.count(STAGE) > 0) {
+            switch (m_options.find(STAGE)->second)
+            {
+            case Config::VERTEX:
+                return EShLanguage::EShLangVertex;
+            case Config::FRAGMENT:
+                return EShLanguage::EShLangFragment;
+            default:
+                throw std::runtime_error("stage is not mapped.");
+            }
+        }
 		else
 			throw std::runtime_error("stage should be set.");
-		return UNKNOWN;
+		return EShLangCount;
 	}
 	std::string getInputFilename() const { return m_input; }
 	std::string getShaderInfoFilename() const { return m_output + ".sri"; }
 	std::string getShaderBinFilename() const { return m_output + ".sr"; }
+    EShMessages getMessages() const { return m_messages; }
 
 private:
 	void setOption(const std::vector<std::string>& arguments) {
@@ -111,6 +145,14 @@ private:
 						m_options[DEF] = OPENGL;
 					}
 				}
+                else if (option == 'h') { // IS HLSL
+                    if (argument == "true") {
+                        m_options[DEF] = HLSL;
+                    }
+                    else {
+                        m_options[DEF] = OPENGL;
+                    }
+                }
 				i += 2;
 			}
 			else
@@ -129,4 +171,5 @@ private:
 	std::map<Option, OptionValue> m_options;
 	std::string m_input;
 	std::string m_output;
+    EShMessages m_messages = (EShMessages)(EShMsgDefault);
 };

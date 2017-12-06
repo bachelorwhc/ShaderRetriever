@@ -35,22 +35,22 @@ void WriteBasicType(JSON& j, const glslang::TType& type) {
 void WriteAttributesJSON(const glslang::TProgram& program, JSON& config_json, const bool vulkan_def) {
 	JSON attributes_json;
 	auto attributes_size = program.getNumLiveAttributes();
-	for (int i = 0; i < attributes_size; ++i) {
-		JSON attri_json;
-		auto attribute_type = program.getAttributeType(i);
-		attri_json["type"] = GetTypeDef(vulkan_def, attribute_type);
+    for (int i = 0; i < attributes_size; ++i) {
+        JSON attri_json;
+        auto attribute_type = program.getAttributeType(i);
+        attri_json["type"] = GetTypeDef(vulkan_def, attribute_type);
 
-		const auto& type = program.getAttributeTType(i);
-		WriteBasicType(attri_json, *type);
-		attri_json["vector_size"] = type->getVectorSize();
+        const auto& type = program.getAttributeTType(i);
+        WriteBasicType(attri_json, *type);
+        attri_json["vector_size"] = type->getVectorSize();
 
-		const auto& qualifier = type->getQualifier();
-		SetQualifier(qualifier, attri_json);
+        const auto& qualifier = type->getQualifier();
+        SetQualifier(qualifier, attri_json);
 
-		attributes_json[program.getAttributeName(i)] = attri_json;
-	}
-	if (attributes_size > 0)
-		config_json["attributes"] = attributes_json;
+        attributes_json[program.getAttributeName(i)] = attri_json;
+    }
+    if (attributes_size > 0)
+        config_json["attributes"] = attributes_json;
 }
 
 void WriteUniformBlocksJSON(const glslang::TProgram& program, JSON& config_json) {
@@ -97,18 +97,6 @@ void WriteUniformVariablesJSON(const glslang::TProgram& program, JSON& config_js
 		config_json["uniform_blocks"] = uniform_variables_json;
 }
 
-EShLanguage GetStage(Config::OptionValue stage) {
-	switch (stage)
-	{
-	case Config::VERTEX:
-		return EShLanguage::EShLangVertex;
-	case Config::FRAGMENT:
-		return EShLanguage::EShLangFragment;
-	default:
-		throw std::runtime_error("stage is not mapped.");
-	}
-}
-
 void CreateShader(EShLanguage stage, glslang::TShader*& p_shader) {
 	p_shader = new(std::nothrow) glslang::TShader(stage);
 }
@@ -131,10 +119,8 @@ std::vector<std::string> LoadShaderSoruces(std::vector<std::string> file_paths) 
 	return ret;
 }
 
-bool ParseShader(glslang::TShader* p_shader) {
-	EShMessages messages = (EShMessages)(EShMsgDefault | EShMsgSpvRules | EShMsgVulkanRules);
-
-	if (!p_shader->parse(&DefaultTBuiltInResource, 100, false, messages)) {
+bool ParseShader(glslang::TShader* p_shader, const EShMessages e_messages) {
+	if (!p_shader->parse(&DefaultTBuiltInResource, 100, false, e_messages)) {
 		std::cout << p_shader->getInfoLog() << std::endl;
 		std::cout << p_shader->getInfoDebugLog() << std::endl;
 		return false;
@@ -142,9 +128,8 @@ bool ParseShader(glslang::TShader* p_shader) {
 	return true;
 }
 
-bool InitializeProgram(glslang::TProgram& program) {
-	EShMessages messages = (EShMessages)(EShMsgDefault | EShMsgSpvRules | EShMsgVulkanRules);
-	if (!program.link(messages)) {
+bool InitializeProgram(glslang::TProgram& program, const EShMessages e_messages) {
+	if (!program.link(e_messages)) {
 		return false;
 	}
 	if (!program.buildReflection()) {
@@ -153,16 +138,16 @@ bool InitializeProgram(glslang::TProgram& program) {
 	return true;
 }
 
-void ConfigureShader(glslang::TShader* const p_shader, EShLanguage stage) {
+void ConfigureShader(glslang::TShader* const p_shader, Config& k_config) {
 	p_shader->setEnvInput(
 		glslang::EShSourceGlsl,
-		stage,
+        k_config.getStage(),
 		glslang::EShClientVulkan,
 		450
 	);
 	p_shader->setEnvClient(glslang::EShClientVulkan, 100);
 	p_shader->setEnvTarget(glslang::EshTargetSpv, 0x00001000);
-	bool result = ParseShader(p_shader);
+	bool result = ParseShader(p_shader, k_config.getMessages());
 	assert(result);
 }
 
@@ -171,7 +156,7 @@ int main(int argc, char** argv) {
 	try {
 		Config config(argc, argv);
 		glslang::InitializeProcess();
-		auto stage = GetStage(config.getStage());
+		auto stage = config.getStage();
 		CreateShader(stage, p_shader);
 		if (p_shader == nullptr) {
 			std::cout
@@ -188,12 +173,12 @@ int main(int argc, char** argv) {
 		}
 		p_shader->setStrings(c_srcs.data(), c_srcs.size());
 
-		ConfigureShader(p_shader, stage);
+		ConfigureShader(p_shader, config);
 
 		glslang::TProgram program;
 
 		program.addShader(p_shader);
-		bool result = InitializeProgram(program);
+		bool result = InitializeProgram(program, config.getMessages());
 		assert(result);
 		
 		JSON conf_json;
