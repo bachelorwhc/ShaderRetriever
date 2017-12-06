@@ -1,7 +1,7 @@
 #include "gl2vulkan.h"
 
 unsigned int AttributeGL2Vulkan(int GLdef) {
-	int ret = -1;
+	int ret = 0xF0000000;
 	switch (GLdef) {
 	case GL_FLOAT:
 		ret = VK_FORMAT_R32_SFLOAT;
@@ -76,6 +76,7 @@ unsigned int AttributeGL2Vulkan(int GLdef) {
 		ret = VK_FORMAT_R64G64B64A64_UINT;
 		break;
 	default:
+        ret |= GLdef;
 		break;
 	}
 	return ret;

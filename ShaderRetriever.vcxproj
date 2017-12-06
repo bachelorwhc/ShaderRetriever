@@ -36,26 +36,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -115,7 +115,7 @@
       <PreprocessorDefinitions>GLSLANG_OSINCLUDE_WIN32;AMD_EXTENSIONS;NV_EXTENSIONS</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>glslang.lib;SPIRV.lib;SPVRemapper.lib;psapi.lib;OGLCompiler.lib;OSDependent.lib</AdditionalDependencies>
+      <AdditionalDependencies>glslang-default-resource-limitsd.lib;glslangd.lib;HLSLd.lib;OGLCompilerd.lib;OSDependentd.lib;SPIRV-Tools-linkd.lib;SPIRV-Tools-optd.lib;SPIRV-Toolsd.lib;SPIRVd.lib;SPVRemapperd.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -128,7 +128,7 @@
       <PreprocessorDefinitions>GLSLANG_OSINCLUDE_WIN32;AMD_EXTENSIONS;NV_EXTENSIONS</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>glslang.lib;SPIRV.lib;SPVRemapper.lib;psapi.lib;OGLCompiler.lib;OSDependent.lib</AdditionalDependencies>
+      <AdditionalDependencies>glslang-default-resource-limitsd.lib;glslangd.lib;HLSLd.lib;OGLCompilerd.lib;OSDependentd.lib;SPIRV-Tools-linkd.lib;SPIRV-Tools-optd.lib;SPIRV-Toolsd.lib;SPIRVd.lib;SPVRemapperd.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -145,7 +145,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>glslang.lib;SPIRV.lib;SPVRemapper.lib;psapi.lib;OGLCompiler.lib;OSDependent.lib</AdditionalDependencies>
+      <AdditionalDependencies>glslang-default-resource-limits.lib;glslang.lib;HLSL.lib;OGLCompiler.lib;OSDependent.lib;SPIRV-Tools-link.lib;SPIRV-Tools-opt.lib;SPIRV-Tools.lib;SPIRV.lib;SPVRemapper.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -162,7 +162,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>glslang.lib;SPIRV.lib;SPVRemapper.lib;psapi.lib;OGLCompiler.lib;OSDependent.lib</AdditionalDependencies>
+      <AdditionalDependencies>glslang-default-resource-limits.lib;glslang.lib;HLSL.lib;OGLCompiler.lib;OSDependent.lib;SPIRV-Tools-link.lib;SPIRV-Tools-opt.lib;SPIRV-Tools.lib;SPIRV.lib;SPVRemapper.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

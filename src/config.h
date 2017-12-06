@@ -67,7 +67,7 @@ public:
             m_messages = (EShMessages)((unsigned long)m_messages | EShMsgSpvRules | EShMsgVulkanRules);
             break;
         case HLSL:
-            m_messages = (EShMessages)((unsigned long)m_messages | EShMsgReadHlsl | EShMsgHlslOffsets);
+            m_messages = (EShMessages)((unsigned long)m_messages | EShMsgSpvRules | EShMsgVulkanRules | EShMsgReadHlsl | EShMsgHlslOffsets);
             break;
         default:
             assert(true);
@@ -111,6 +111,15 @@ public:
 			throw std::runtime_error("stage should be set.");
 		return EShLangCount;
 	}
+
+    glslang::EShSource getSource() const {
+        if (isHLSLDef()) {
+            return glslang::EShSourceHlsl;
+        }
+        return glslang::EShSourceGlsl;
+    }
+
+    std::string getSourceEntryPoint() const { return m_entry; }
 	std::string getInputFilename() const { return m_input; }
 	std::string getShaderInfoFilename() const { return m_output + ".sri"; }
 	std::string getShaderBinFilename() const { return m_output + ".sr"; }
@@ -153,6 +162,9 @@ private:
                         m_options[DEF] = OPENGL;
                     }
                 }
+                else if (option == 'e') {
+                    m_entry = argument;
+                }
 				i += 2;
 			}
 			else
@@ -171,5 +183,6 @@ private:
 	std::map<Option, OptionValue> m_options;
 	std::string m_input;
 	std::string m_output;
+    std::string m_entry = "main";
     EShMessages m_messages = (EShMessages)(EShMsgDefault);
 };

@@ -120,7 +120,7 @@ std::vector<std::string> LoadShaderSoruces(std::vector<std::string> file_paths) 
 }
 
 bool ParseShader(glslang::TShader* p_shader, const EShMessages e_messages) {
-	if (!p_shader->parse(&DefaultTBuiltInResource, 100, false, e_messages)) {
+	if (!p_shader->parse(&DefaultTBuiltInResource, 100, true, e_messages)) {
 		std::cout << p_shader->getInfoLog() << std::endl;
 		std::cout << p_shader->getInfoDebugLog() << std::endl;
 		return false;
@@ -139,14 +139,14 @@ bool InitializeProgram(glslang::TProgram& program, const EShMessages e_messages)
 }
 
 void ConfigureShader(glslang::TShader* const p_shader, Config& k_config) {
-	p_shader->setEnvInput(
-		glslang::EShSourceGlsl,
+	/*p_shader->setEnvInput(
+        k_config.getSource(),
         k_config.getStage(),
 		glslang::EShClientVulkan,
 		450
 	);
 	p_shader->setEnvClient(glslang::EShClientVulkan, 100);
-	p_shader->setEnvTarget(glslang::EshTargetSpv, 0x00001000);
+	p_shader->setEnvTarget(glslang::EshTargetSpv, 0x00001000);*/
 	bool result = ParseShader(p_shader, k_config.getMessages());
 	assert(result);
 }
@@ -172,7 +172,7 @@ int main(int argc, char** argv) {
 			c_srcs.push_back(s.c_str());
 		}
 		p_shader->setStrings(c_srcs.data(), c_srcs.size());
-
+        p_shader->setSourceEntryPoint(config.getSourceEntryPoint().c_str());
 		ConfigureShader(p_shader, config);
 
 		glslang::TProgram program;
