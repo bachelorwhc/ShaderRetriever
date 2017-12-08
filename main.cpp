@@ -152,6 +152,11 @@ bool InitializeProgram(glslang::TProgram& program, const EShMessages e_messages)
         std::cout << program.getInfoDebugLog() << std::endl;
 		return false;
 	}
+    if (!program.mapIO()) {
+        std::cout << program.getInfoLog() << std::endl;
+        std::cout << program.getInfoDebugLog() << std::endl;
+        return false;
+    }
 	if (!program.buildReflection()) {
         std::cout << program.getInfoLog() << std::endl;
         std::cout << program.getInfoDebugLog() << std::endl;
@@ -206,7 +211,7 @@ int main(int argc, char** argv) {
 		
 		JSON conf_json;
 
-		WriteAttributesJSON(program, conf_json, config.isVulkanDef());
+		WriteAttributesJSON(program, conf_json, config.isVulkanDef() || config.isHLSLDef());
 		WriteUniformBlocksJSON(program, conf_json);
 		WriteUniformVariablesJSON(program, conf_json);
 
