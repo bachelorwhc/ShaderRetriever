@@ -63,13 +63,13 @@ void WriteUniformBlocksJSON(const glslang::TProgram& program, JSON& config_json)
 		const auto& type = program.getUniformBlockTType(i);
 		WriteBasicType(uniform_blk_json, *type);
 
-        auto offset = program.getUniformBufferOffset(i);
-        if (offset >= 0) {
-            uniform_blk_json["offset"] = offset;
-        }
-
 		const auto& qualifier = type->getQualifier();
 		SetQualifier(qualifier, uniform_blk_json);
+
+        auto offset = program.getUniformBufferOffset(i);
+        if (offset >= 0 && qualifier.layoutPushConstant == false) {
+            uniform_blk_json["offset"] = offset;
+        }
 
         auto name = program.getUniformBlockName(i);
 		uniform_blocks_json[program.getUniformBlockName(i)] = uniform_blk_json;
