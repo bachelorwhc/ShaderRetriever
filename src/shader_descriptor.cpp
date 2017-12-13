@@ -3,10 +3,70 @@
 #include <exception>
 #include "shader_descriptor.h"
 #include "config.h"
+#include "spv_program.h"
 
 ShaderDescriptor::ShaderDescriptor() : 
     m_descriptor_pool(VkDescriptorType::VK_DESCRIPTOR_TYPE_RANGE_SIZE) {
 
+}
+
+void ShaderDescriptor::buildPushConstants(glslang::TShader* p_shader, Config& config) {
+    glslang::TProgram* p_program = new(std::nothrow)glslang::TProgram;
+    assert(p_program != nullptr);
+    auto sh_stage = p_shader->getStage();
+    auto stage = VK_SHADER_STAGE_ALL;
+    switch (sh_stage)
+    {
+    case EShLangVertex:
+        stage = VK_SHADER_STAGE_VERTEX_BIT;
+        break;
+    case EShLangTessControl:
+        stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+        break;
+    case EShLangTessEvaluation:
+        stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+        break;
+    case EShLangGeometry:
+        stage = VK_SHADER_STAGE_GEOMETRY_BIT;
+        break;
+    case EShLangFragment:
+        stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        break;
+    case EShLangCompute:
+        stage = VK_SHADER_STAGE_COMPUTE_BIT;
+        break;
+    default:
+        assert(false);
+        break;
+    }
+    p_program->addShader(p_shader);
+    bool result = InitializeProgram(*p_program, config.getMessages());
+    assert(result);
+
+    JSON uniform_blocks_json;
+    auto uniform_blks_size = p_program->getNumLiveUniformBlocks();
+    for (int i = 0; i < uniform_blks_size; ++i) {
+        JSON uniform_blk_json;
+        uniform_blk_json["block_size"] = p_program->getUniformBlockSize(i);
+        uniform_blk_json["stage"] = stage;
+
+        const auto& type = p_program->getUniformBlockTType(i);
+        writeBasicType(uniform_blk_json, *type);
+
+        const auto& qualifier = type->getQualifier();
+        setQualifier(qualifier, uniform_blk_json);
+
+        auto name = p_program->getUniformBlockName(i);
+        if (qualifier.layoutPushConstant == false) {
+            continue;
+        }
+        else {
+            m_push_constants[p_program->getUniformBlockName(i)] = uniform_blk_json;
+        }
+    }
+    for (auto& value : m_descriptor_pool) {
+        value = 0;
+    }
 }
 
 void ShaderDescriptor::processProgram(glslang::TProgram& program, Config& config) {
@@ -98,7 +158,7 @@ void ShaderDescriptor::writeAttributesJSON(const glslang::TProgram& program, JSO
             attributes_json[program.getAttributeName(i)] = attri_json;
         }
         else {
-            m_push_constants[program.getAttributeName(i)] = attri_json;
+            continue;
         }
     }
     if (attributes_size > 0)
@@ -129,7 +189,7 @@ void ShaderDescriptor::writeUniformBlocksJSON(const glslang::TProgram& program, 
             uniform_blocks_json[program.getUniformBlockName(i)] = uniform_blk_json;
         }
         else {
-            m_push_constants[program.getUniformBlockName(i)] = uniform_blk_json;
+            continue;
         }
     }
     if (uniform_blks_size > 0)

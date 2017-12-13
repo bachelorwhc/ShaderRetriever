@@ -12,8 +12,14 @@ class Config;
 class ShaderDescriptor {
 public:
     ShaderDescriptor();
-    ~ShaderDescriptor() {};
+    ~ShaderDescriptor() {
+        for (auto p : dummy_programs) {
+            if (p)
+                delete p;
+        }
+    };
 
+    void buildPushConstants(glslang::TShader* p_shader, Config& config);
     void processProgram(glslang::TProgram& program, Config& config);
     void writeFile(std::string filename);
 
@@ -32,4 +38,5 @@ private:
     uint32_t m_max_set = 1;
     JSON m_push_constants;
     std::vector<uint32_t> m_descriptor_pool;
+    std::vector<glslang::TProgram*> dummy_programs;
 };

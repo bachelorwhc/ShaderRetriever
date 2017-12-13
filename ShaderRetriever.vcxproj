@@ -23,11 +23,13 @@
     <ClCompile Include="src\gl2vulkan.cpp" />
     <ClCompile Include="src\resource_limits.cpp" />
     <ClCompile Include="src\shader_descriptor.cpp" />
+    <ClCompile Include="src\spv_program.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\config.h" />
     <ClInclude Include="src\gl2vulkan.h" />
     <ClInclude Include="src\shader_descriptor.h" />
+    <ClInclude Include="src\spv_program.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{1e0b53c8-d033-451a-82fd-c35c9dd1065f}</ProjectGuid>

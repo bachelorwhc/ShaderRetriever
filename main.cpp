@@ -10,90 +10,12 @@
 #include <ShaderLang.h>
 #include <GlslangToSpv.h>
 #include "config.h"
+#include "spv_program.h"
 #include "shader_descriptor.h"
-
-EShLanguage VKStageFlagToEShStage(VkShaderStageFlagBits stage) {
-    switch (stage)
-    {
-    case VK_SHADER_STAGE_VERTEX_BIT:
-        return EShLangVertex;
-        break;
-    case VK_SHADER_STAGE_FRAGMENT_BIT:
-        return EShLangFragment;
-        break;
-    default:
-        assert(false);
-        break;
-    }
-    return EShLangCount;
-}
-
-void CreateShader(EShLanguage stage, glslang::TShader*& p_shader) {
-	p_shader = new(std::nothrow) glslang::TShader(stage);
-}
-
-std::vector<std::string> LoadShaderSoruces(std::vector<std::string> file_paths) {
-	std::vector<std::string> ret;
-	for (auto path : file_paths) {
-		std::ifstream file(path);
-		if (!file.is_open()) {
-			break;
-		}
-
-		std::string shader_content(
-			(std::istreambuf_iterator<char>(file)),
-			std::istreambuf_iterator<char>()
-		);
-		ret.push_back(shader_content);
-		file.close();
-	}
-	return ret;
-}
-
-bool ParseShader(glslang::TShader* p_shader, const EShMessages e_messages) {
-	if (!p_shader->parse(&DefaultTBuiltInResource, 100, false, e_messages)) {
-		std::cout << p_shader->getInfoLog() << std::endl;
-		std::cout << p_shader->getInfoDebugLog() << std::endl;
-		return false;
-	}
-	return true;
-}
-
-bool InitializeProgram(glslang::TProgram& program, const EShMessages e_messages) {
-	if (!program.link(e_messages)) {
-        std::cout << program.getInfoLog() << std::endl;
-        std::cout << program.getInfoDebugLog() << std::endl;
-		return false;
-	}
-    if (!program.mapIO()) {
-        std::cout << program.getInfoLog() << std::endl;
-        std::cout << program.getInfoDebugLog() << std::endl;
-        return false;
-    }
-	if (!program.buildReflection()) {
-        std::cout << program.getInfoLog() << std::endl;
-        std::cout << program.getInfoDebugLog() << std::endl;
-		return false;
-	}
-    program.dumpReflection();
-	return true;
-}
-
-void ConfigureShader(glslang::TShader* const p_shader, EShLanguage stage, Config& k_config) {
-	p_shader->setEnvInput(
-        k_config.getSource(),
-        stage,
-		glslang::EShClientVulkan,
-		450
-	);
-	p_shader->setEnvClient(glslang::EShClientVulkan, 100);
-	p_shader->setEnvTarget(glslang::EshTargetSpv, 0x00001000);
-	bool result = ParseShader(p_shader, k_config.getMessages());
-	assert(result);
-}
 
 int main(int argc, char** argv) {
     std::vector<glslang::TShader*> p_shaders;
+    std::vector<glslang::TShader*> p_pc_shaders;
 	try {
         if (argc < 2) {
             throw std::exception("input must be specified.");
@@ -104,10 +26,12 @@ int main(int argc, char** argv) {
         const auto& stages = config.getStages();
         uint32_t stage_count = config.getStages().size();
         p_shaders.resize(stage_count);
+        p_pc_shaders.resize(stage_count);
         
         for (uint32_t i = 0; i < stage_count; ++i) {
             auto sh_stage = VKStageFlagToEShStage(stages[i]);
             CreateShader(sh_stage, p_shaders[i]);
+            CreateShader(sh_stage, p_pc_shaders[i]);
             if (p_shaders[i] == nullptr) {
                 std::cout
                     << "Something is going wrong,"
@@ -124,6 +48,10 @@ int main(int argc, char** argv) {
             p_shaders[i]->setStrings(c_srcs.data(), c_srcs.size());
             p_shaders[i]->setEntryPoint(config.shaderEntrys[stages[i]].c_str());
             ConfigureShader(p_shaders[i], sh_stage, config);
+
+            p_pc_shaders[i]->setStrings(c_srcs.data(), c_srcs.size());
+            p_pc_shaders[i]->setEntryPoint(config.shaderEntrys[stages[i]].c_str());
+            ConfigureShader(p_pc_shaders[i], sh_stage, config);
         }
 
 		glslang::TProgram program;
@@ -136,6 +64,11 @@ int main(int argc, char** argv) {
 		assert(result);
 		
         ShaderDescriptor shader_descriptor;
+        for (auto p_shader : p_pc_shaders) {
+            shader_descriptor.buildPushConstants(p_shader, config);
+            if (p_shader)
+                delete p_shader;
+        }
         shader_descriptor.processProgram(program, config);
 
         for (int i = 0; i < stage_count; ++i) {
