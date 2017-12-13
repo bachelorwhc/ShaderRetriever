@@ -9,110 +9,23 @@
 #include <vector>
 #include <ShaderLang.h>
 #include <GlslangToSpv.h>
-#include <json.hpp>
-#include "gl2vulkan.h"
 #include "config.h"
+#include "shader_descriptor.h"
 
-using JSON = nlohmann::json;
-
-void SetQualifier(const glslang::TQualifier& qualifier, JSON& json) {
-	if (qualifier.hasBinding())
-		json["binding"] = qualifier.layoutBinding;
-	if (qualifier.hasLocation())
-		json["location"] = qualifier.layoutLocation;
-	if (qualifier.layoutPushConstant)
-		json["push_constant"] = 1;
-}
-
-int GetTypeDef(const bool vulkan_def, const int attri_type) {
-	return vulkan_def ? AttributeGL2Vulkan(attri_type) : attri_type;
-}
-
-void WriteBasicType(JSON& j, const glslang::TType& type) {
-	j["basic_type"] = type.getBasicTypeString().c_str();
-}
-
-void WriteAttributesJSON(const glslang::TProgram& program, JSON& config_json, const bool vulkan_def) {
-	JSON attributes_json;
-	auto attributes_size = program.getNumLiveAttributes();
-    for (int i = 0; i < attributes_size; ++i) {
-        JSON attri_json;
-        auto attribute_type = program.getAttributeType(i);
-        attri_json["type"] = GetTypeDef(vulkan_def, attribute_type);
-
-        const auto& type = program.getAttributeTType(i);
-        WriteBasicType(attri_json, *type);
-        attri_json["vector_size"] = type->getVectorSize();
-
-        const auto& qualifier = type->getQualifier();
-        SetQualifier(qualifier, attri_json);
-
-        attributes_json[program.getAttributeName(i)] = attri_json;
+EShLanguage VKStageFlagToEShStage(VkShaderStageFlagBits stage) {
+    switch (stage)
+    {
+    case VK_SHADER_STAGE_VERTEX_BIT:
+        return EShLangVertex;
+        break;
+    case VK_SHADER_STAGE_FRAGMENT_BIT:
+        return EShLangFragment;
+        break;
+    default:
+        assert(false);
+        break;
     }
-    if (attributes_size > 0)
-        config_json["attributes"] = attributes_json;
-}
-
-void WriteUniformBlocksJSON(const glslang::TProgram& program, JSON& config_json) {
-	JSON uniform_blocks_json;
-	auto uniform_blks_size = program.getNumLiveUniformBlocks();
-	for (int i = 0; i < uniform_blks_size; ++i) {
-		JSON uniform_blk_json;
-		uniform_blk_json["block_size"] = program.getUniformBlockSize(i);
-
-		const auto& type = program.getUniformBlockTType(i);
-		WriteBasicType(uniform_blk_json, *type);
-
-		const auto& qualifier = type->getQualifier();
-		SetQualifier(qualifier, uniform_blk_json);
-
-        auto offset = program.getUniformBufferOffset(i);
-        if (offset >= 0 && qualifier.layoutPushConstant == false) {
-            uniform_blk_json["offset"] = offset;
-        }
-
-        auto name = program.getUniformBlockName(i);
-		uniform_blocks_json[program.getUniformBlockName(i)] = uniform_blk_json;
-	}
-	if (uniform_blks_size > 0)
-		config_json["uniform_blocks"] = uniform_blocks_json;
-}
-
-void WriteUniformVariablesJSON(const glslang::TProgram& program, JSON& config_json) {
-	JSON uniform_variables_json;
-	auto uniform_vars_size = program.getNumLiveUniformVariables();
-	for (int i = 0; i < uniform_vars_size; ++i) {
-		JSON uniform_var_json;
-
-		const auto& type = program.getUniformTType(i);
-		uniform_var_json["basic_type"] = type->getBasicTypeString().c_str();
-		if (type->getBasicType() == glslang::EbtSampler) {
-			auto sampler = type->getSampler();
-			JSON sampler_json;
-			sampler_json["dim"] = sampler.dim;
-			sampler_json["type"] = sampler.type;
-			uniform_var_json["sampler"] = sampler_json;
-		}
-
-        auto offset = program.getUniformBufferOffset(i);
-        if (offset >= 0) {
-            uniform_var_json["offset"] = offset;
-        }
-
-        auto index = program.getUniformBlockIndex(i);
-        if (index >= 0) {
-            uniform_var_json["index"] = index;
-            auto block = program.getUniformBlockName(index);
-            uniform_var_json["block_name"] = block;
-        }
-
-		const auto& qualifier = type->getQualifier();
-		SetQualifier(qualifier, uniform_var_json);
-
-		uniform_variables_json[program.getUniformName(i)] = uniform_var_json;
-	}
-	if (uniform_vars_size > 0)
-		config_json["uniform_variables"] = uniform_variables_json;
+    return EShLangCount;
 }
 
 void CreateShader(EShLanguage stage, glslang::TShader*& p_shader) {
@@ -166,10 +79,10 @@ bool InitializeProgram(glslang::TProgram& program, const EShMessages e_messages)
 	return true;
 }
 
-void ConfigureShader(glslang::TShader* const p_shader, Config& k_config) {
+void ConfigureShader(glslang::TShader* const p_shader, EShLanguage stage, Config& k_config) {
 	p_shader->setEnvInput(
         k_config.getSource(),
-        k_config.getStage(),
+        stage,
 		glslang::EShClientVulkan,
 		450
 	);
@@ -180,65 +93,79 @@ void ConfigureShader(glslang::TShader* const p_shader, Config& k_config) {
 }
 
 int main(int argc, char** argv) {
-	glslang::TShader* p_shader = nullptr;
+    std::vector<glslang::TShader*> p_shaders;
 	try {
-		Config config(argc, argv);
+        if (argc < 2) {
+            throw std::exception("input must be specified.");
+        }
+        
+		Config config(argv[1]);
 		glslang::InitializeProcess();
-		auto stage = config.getStage();
-		CreateShader(stage, p_shader);
-		if (p_shader == nullptr) {
-			std::cout
-				<< "Something is going wrong,"
-				<< "memory allocation failed!"
-				<< std::endl;
-			return 1;
-		}
+        const auto& stages = config.getStages();
+        uint32_t stage_count = config.getStages().size();
+        p_shaders.resize(stage_count);
+        
+        for (uint32_t i = 0; i < stage_count; ++i) {
+            auto sh_stage = VKStageFlagToEShStage(stages[i]);
+            CreateShader(sh_stage, p_shaders[i]);
+            if (p_shaders[i] == nullptr) {
+                std::cout
+                    << "Something is going wrong,"
+                    << "memory allocation failed!"
+                    << std::endl;
+                return 1;
+            }
 
-		auto& srcs = LoadShaderSoruces({ config.getInputFilename() });
-		std::vector<const char*> c_srcs;
-		for (auto& s : srcs) {
-			c_srcs.push_back(s.c_str());
-		}
-		p_shader->setStrings(c_srcs.data(), c_srcs.size());
-        p_shader->setEntryPoint(config.getSourceEntryPoint().c_str());
-		ConfigureShader(p_shader, config);
+            auto& srcs = LoadShaderSoruces({ config.shaderFilepaths[stages[i]] });
+            std::vector<const char*> c_srcs;
+            for (auto& s : srcs) {
+                c_srcs.push_back(s.c_str());
+            }
+            p_shaders[i]->setStrings(c_srcs.data(), c_srcs.size());
+            p_shaders[i]->setEntryPoint(config.shaderEntrys[stages[i]].c_str());
+            ConfigureShader(p_shaders[i], sh_stage, config);
+        }
 
 		glslang::TProgram program;
 
-		program.addShader(p_shader);
+        for (auto p_shader : p_shaders) {
+            program.addShader(p_shader);
+        }
+
 		bool result = InitializeProgram(program, config.getMessages());
 		assert(result);
 		
-		JSON conf_json;
+        ShaderDescriptor shader_descriptor;
+        shader_descriptor.processProgram(program, config);
 
-		WriteAttributesJSON(program, conf_json, config.isVulkanDef() || config.isHLSLDef());
-		WriteUniformBlocksJSON(program, conf_json);
-		WriteUniformVariablesJSON(program, conf_json);
-
-		std::vector<unsigned int> spirv;
-		glslang::GlslangToSpv(*program.getIntermediate(stage), spirv);
+        for (int i = 0; i < stage_count; ++i) {
+            std::vector<unsigned int> spirv;
+            glslang::GlslangToSpv(*program.getIntermediate(VKStageFlagToEShStage(stages[i])), spirv);
+            std::ofstream sr_file(config.getShaderBinFilename(stages[i]), std::ios::binary);
+            if (!sr_file.is_open()) {
+                std::cout
+                    << "Something is going wrong,"
+                    << "file can not be loaded!"
+                    << std::endl;
+                return 1;
+            }
+            sr_file.write((char*)spirv.data(), spirv.size() * sizeof(unsigned int));
+            sr_file.close();
+        }
 
 		glslang::FinalizeProcess();
-
-		std::ofstream sri_file(config.getShaderInfoFilename());
-		std::ofstream sr_file(config.getShaderBinFilename(), std::ios::binary);
-		if(!sri_file.is_open() || !sr_file.is_open()) {
-			std::cout
-				<< "Something is going wrong,"
-				<< "file can not be loaded!"
-				<< std::endl;
-			return 1;
-		}
-		sr_file.write((char*)spirv.data(), spirv.size() * sizeof(unsigned int));
-		sri_file << std::setw(4) << conf_json;
-		sri_file.close();
-		sr_file.close();
+        shader_descriptor.writeFile(config.getShaderDescriptorFilename());
 	}
+
 	catch(std::runtime_error& error) {
 		std::cout << error.what() << std::endl;
 		std::cout << "ShaderRetriever -i <filename> -s <vertex|fragment> -o <Output Filename> -v <true|false>" << std::endl;
 	}
-	if (p_shader)
-		delete p_shader;
+
+    for (auto p_shader : p_shaders) {
+        if(p_shader)
+            delete p_shader;
+    }
+
 	return 0;
 }

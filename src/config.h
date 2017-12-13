@@ -1,67 +1,90 @@
 #pragma once
 #include <string>
+#include <iostream>
+#include <fstream>
 #include <vector>
 #include <exception>
 #include <map>
 #include <cassert>
 #include <ShaderLang.h>
 #include <ResourceLimits.h>
+#include <json.hpp>
+#include <vulkan/vulkan.h>
 
 extern const TBuiltInResource DefaultTBuiltInResource;
 
 class Config {
 public:
-	enum Option {
-		DEF,
-		STAGE
-	};
-	enum OptionValue {
+    enum LanguageDef {
 		UNKNOWN,
 		OPENGL,
 		VULKAN,
-        HLSL,
-		VERTEX,
-		FRAGMENT
+        HLSL
 	};
 
 	Config() = delete;
 
-	Config(int argc, char** argv) {
-		if (argc == 1) {
-			throw std::runtime_error("input file should be set.");
-		}
-		std::vector<std::string> arguments(argc - 1);
-		int minus_count = 0;
+	Config(char* argv) {
+        using JSON = nlohmann::json;
+        std::string filepath(argv);
+        std::ifstream config_file(filepath);
+        if (!config_file.is_open()) {
+            throw std::exception("file open failed.");
+        }
+        JSON json;
+        config_file >> json;
 
-		for (int i = 1; i < argc; ++i) { // ignore the exe filename.
-			arguments[i - 1] = argv[i];
-			++minus_count;
-		}
+        if (json.count("sources") == 0) {
+            throw std::exception("shader must exists.");
+        }
 
-		if (minus_count > 0) {
-			setOption(arguments);
-		}
+        for (auto& obj : json["sources"].get<JSON::object_t>()) {
+            auto stage = VK_SHADER_STAGE_ALL;
+            if (obj.first == "fragment") {
+                stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+                m_stages.push_back(stage);
+            }
+            else if (obj.first == "vertex") {
+                stage = VK_SHADER_STAGE_VERTEX_BIT;
+                m_stages.push_back(stage);
+            }
+            else {
+                assert(false);
+            }
+            shaderFilepaths[stage] = obj.second["path"].get<std::string>();
+            if (obj.second.count("entry") == 0) {
+                shaderEntrys[stage] = "main";
+            }
+            else {
+                shaderEntrys[stage] = obj.second["entry"].get<std::string>();
+            }
+        }
+        
+        if (json.count("vulkan_define") > 0) {
+            if(json["vulkan_define"].get<bool>())
+                m_language_def = VULKAN;
+            else
+                m_language_def = OPENGL;
+        }
+        else {
+            m_language_def = OPENGL;
+        }
 
-		if (isUnset(m_input)) {
-			for (const auto& arg : arguments) {
-				if (arg[0] != '-' && arg.size() > 0) {
-					m_input = arg;
-					break;
-				}
-			}
-			if (isUnset(m_input))
-				throw std::runtime_error("input file should be set.");
-		}
+        if (json.count("spv") > 0) {
+            spv_path = json["spv"].get<std::string>();
+        }
+        else {
+            spv_path = "output.spv";
+        }
 
-		if (isUnset(DEF)) {
-			m_options[DEF] = OPENGL;
-		}
+        if (json.count("descriptor") > 0) {
+            sd_path = json["descriptor"].get<std::string>();
+        }
+        else {
+            sd_path = "output.sd";
+        }
 
-		if (isUnset(STAGE)) {
-			throw std::runtime_error("stage should be set.");
-		}
-
-        switch (m_options[DEF])
+        switch (m_language_def)
         {
         case VULKAN:
             m_messages = (EShMessages)((unsigned long)m_messages | EShMsgSpvRules | EShMsgVulkanRules);
@@ -80,37 +103,12 @@ public:
 	};
 
 	bool isVulkanDef() const {
-		if (m_options.count(DEF) > 0)
-			return m_options.find(DEF)->second == VULKAN;
-		else
-			throw std::runtime_error("language should be set.");
-		return false;
+        return m_language_def == VULKAN;
 	}
 
     bool isHLSLDef() const {
-        if (m_options.count(DEF) > 0)
-            return m_options.find(DEF)->second == HLSL;
-        else
-            throw std::runtime_error("language should be set.");
-        return false;
+        return m_language_def == HLSL;
     }
-
-    EShLanguage getStage() const {
-		if (m_options.count(STAGE) > 0) {
-            switch (m_options.find(STAGE)->second)
-            {
-            case Config::VERTEX:
-                return EShLanguage::EShLangVertex;
-            case Config::FRAGMENT:
-                return EShLanguage::EShLangFragment;
-            default:
-                throw std::runtime_error("stage is not mapped.");
-            }
-        }
-		else
-			throw std::runtime_error("stage should be set.");
-		return EShLangCount;
-	}
 
     glslang::EShSource getSource() const {
         if (isHLSLDef()) {
@@ -119,70 +117,46 @@ public:
         return glslang::EShSourceGlsl;
     }
 
-    std::string getSourceEntryPoint() const { return m_entry; }
-	std::string getInputFilename() const { return m_input; }
-	std::string getShaderInfoFilename() const { return m_output + ".sri"; }
-	std::string getShaderBinFilename() const { return m_output + ".sr"; }
+	std::string getShaderDescriptorFilename() const { return sd_path; }
+	std::string getShaderBinFilename(VkShaderStageFlagBits stage) const {
+        std::string app = "";
+        switch (stage)
+        {
+        case VK_SHADER_STAGE_VERTEX_BIT:
+            app = "vert";
+            break;
+        case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+            app = "tesc";
+            break;
+        case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+            app = "tese";
+            break;
+        case VK_SHADER_STAGE_GEOMETRY_BIT:
+            app = "geom";
+            break;
+        case VK_SHADER_STAGE_FRAGMENT_BIT:
+            app = "frag";
+            break;
+        case VK_SHADER_STAGE_COMPUTE_BIT:
+            app = "comp";
+            break;
+        case VK_SHADER_STAGE_ALL_GRAPHICS:
+        case VK_SHADER_STAGE_ALL:
+        default:
+            assert(false);
+            break;
+        }
+        return spv_path + "." + app + ".sr";
+    }
+    const std::vector<VkShaderStageFlagBits>& getStages() { return m_stages; }
     EShMessages getMessages() const { return m_messages; }
 
+    std::map<VkShaderStageFlagBits, std::string> shaderFilepaths;
+    std::map<VkShaderStageFlagBits, std::string> shaderEntrys;
 private:
-	void setOption(const std::vector<std::string>& arguments) {
-		auto size = arguments.size();
-		for (int i = 0; i < size;) {
-			if (arguments[i][0] == '-' && arguments[i].size() == 2) {
-				char option = arguments[i][1];
-				const auto& argument = arguments[i + 1];
-				if (option == 'o') { // OUTPUT FILE
-					m_output = argument;
-				}
-				else if (option == 'i') { // INPUT FILE
-					m_input = argument;
-				}
-				else if (option == 's') { // STAGE
-					if (argument == "fragment") {
-						m_options[STAGE] = FRAGMENT;
-					}
-					else if (argument == "vertex") {
-						m_options[STAGE] = VERTEX;
-					}
-				}
-				else if (option == 'v') { // IS VULKAN
-					if (argument == "true") {
-						m_options[DEF] = VULKAN;
-					}
-					else {
-						m_options[DEF] = OPENGL;
-					}
-				}
-                else if (option == 'h') { // IS HLSL
-                    if (argument == "true") {
-                        m_options[DEF] = HLSL;
-                    }
-                    else {
-                        m_options[DEF] = OPENGL;
-                    }
-                }
-                else if (option == 'e') {
-                    m_entry = argument;
-                }
-				i += 2;
-			}
-			else
-				++i;
-		}
-	}
-
-	bool isUnset(const std::string& str) const {
-		return str.empty();
-	}
-
-	bool isUnset(const Option option) const {
-		return m_options.count(option) == 0;
-	}
-
-	std::map<Option, OptionValue> m_options;
-	std::string m_input;
-	std::string m_output;
-    std::string m_entry = "main";
+    LanguageDef m_language_def;
+    std::string spv_path;
+    std::string sd_path;
     EShMessages m_messages = (EShMessages)(EShMsgDefault);
+    std::vector<VkShaderStageFlagBits> m_stages;
 };
