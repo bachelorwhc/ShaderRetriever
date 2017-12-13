@@ -26,9 +26,10 @@ private:
     void writeUniformVariablesJSON(const glslang::TProgram& program, JSON& config_json);
 
     JSON m_base;
-    int m_attributes_count = 0;
-    int m_uniform_blocks_count = 0;
-    int m_uniform_variables_count = 0;
+    uint32_t m_attributes_count = 0;
+    uint32_t m_uniform_blocks_count = 0;
+    uint32_t m_uniform_variables_count = 0;
+    uint32_t m_max_set = 1;
     JSON m_push_constants;
     std::vector<uint32_t> m_descriptor_pool;
 };

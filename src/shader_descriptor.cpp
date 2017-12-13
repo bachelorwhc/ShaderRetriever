@@ -22,7 +22,8 @@ void ShaderDescriptor::processProgram(glslang::TProgram& program, Config& config
     brief["uniform_blocks_count"] = m_uniform_blocks_count;
     brief["uniform_variables_count"] = m_uniform_variables_count;
     m_base["brief"] = brief;
-    m_base["descriptor_pool"] = m_descriptor_pool;
+    m_base["descriptor_pool"]["descriptors"] = m_descriptor_pool;
+    m_base["descriptor_pool"]["sets_count"] = m_max_set;
 
     const auto& stages = config.getStages();
     uint32_t stage_count = config.getStages().size();
@@ -48,8 +49,12 @@ void ShaderDescriptor::setQualifier(const glslang::TQualifier& qualifier, JSON& 
         json["binding"] = qualifier.layoutBinding;
     if (qualifier.hasLocation())
         json["location"] = qualifier.layoutLocation;
-    if (qualifier.hasSet())
+    if (qualifier.hasSet()) {
+        if (qualifier.layoutSet + 1 > m_max_set) {
+            m_max_set = qualifier.layoutSet + 1;
+        }
         json["set"] = qualifier.layoutSet;
+    }
 }
 
 int ShaderDescriptor::getTypeDef(const bool vulkan_def, const int attri_type) {
