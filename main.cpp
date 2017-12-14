@@ -89,7 +89,6 @@ int main(int argc, char** argv) {
 		glslang::FinalizeProcess();
         shader_descriptor.writeFile(config.getShaderDescriptorFilename());
 	}
-
 	catch(std::runtime_error& error) {
 		std::cout << error.what() << std::endl;
 		std::cout << "ShaderRetriever -i <filename> -s <vertex|fragment> -o <Output Filename> -v <true|false>" << std::endl;
