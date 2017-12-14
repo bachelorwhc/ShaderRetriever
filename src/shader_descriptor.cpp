@@ -53,9 +53,9 @@ void ShaderDescriptor::buildPushConstants(glslang::TShader* p_shader, Config& co
         const auto& type = p_program->getUniformBlockTType(i);
         writeBasicType(uniform_blk_json, *type);
 
-        const auto& qualifier = type->getQualifier();
-        setQualifier(qualifier, uniform_blk_json);
+        setQualifier(type, uniform_blk_json, p_program->getUniformBlockName(i));
 
+        const auto& qualifier = type->getQualifier();
         auto name = p_program->getUniformBlockName(i);
         if (qualifier.layoutPushConstant == false) {
             continue;
@@ -74,7 +74,7 @@ void ShaderDescriptor::processProgram(glslang::TProgram& program, Config& config
     writeAttributesJSON(program, variables, config.isVulkanDef() || config.isHLSLDef());
     writeUniformBlocksJSON(program, variables);
     writeUniformVariablesJSON(program, variables);
-    variables["push_constant"] = m_push_constants;
+    variables["push_constants"] = m_push_constants;
     m_base["variables"] = variables;
     
     JSON brief;
@@ -93,6 +93,7 @@ void ShaderDescriptor::processProgram(glslang::TProgram& program, Config& config
         spv_desc[config.getShaderBinFilename(s)] = s;
     }
     m_base["spvs"] = spv_desc;
+    m_base["bindings"] = m_bindings;
 }
 
 void ShaderDescriptor::writeFile(std::string filename) {
@@ -104,9 +105,14 @@ void ShaderDescriptor::writeFile(std::string filename) {
     sd_file.close();
 }
 
-void ShaderDescriptor::setQualifier(const glslang::TQualifier& qualifier, JSON& json) {
-    if (qualifier.hasBinding())
+void ShaderDescriptor::setQualifier(const glslang::TType* type, JSON& json, const char* variable_name) {
+    const auto& qualifier = type->getQualifier();
+    if (qualifier.hasBinding()) {
         json["binding"] = qualifier.layoutBinding;
+        m_bindings[variable_name]["set"] = 0;
+        m_bindings[variable_name]["binding"] = qualifier.layoutBinding;
+        m_bindings[variable_name]["type"] = getDescriptorType(*type);
+    }
     if (qualifier.hasLocation())
         json["location"] = qualifier.layoutLocation;
     if (qualifier.hasSet()) {
@@ -114,6 +120,7 @@ void ShaderDescriptor::setQualifier(const glslang::TQualifier& qualifier, JSON& 
             m_max_set = qualifier.layoutSet + 1;
         }
         json["set"] = qualifier.layoutSet;
+        m_bindings[variable_name]["set"] = qualifier.layoutSet;
     }
 }
 
@@ -122,20 +129,9 @@ int ShaderDescriptor::getTypeDef(const bool vulkan_def, const int attri_type) {
 }
 
 void ShaderDescriptor::writeBasicType(JSON& j, const glslang::TType& type) {
-    std::string basic_type(type.getBasicTypeString().c_str());
-    std::size_t found = basic_type.find("sampler");
-    if (found != std::string::npos) {
-        const auto sampler = type.getSampler();
-        if (sampler.combined) {
-            ++m_descriptor_pool[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER];
-        }
-        else {
-            ++m_descriptor_pool[VK_DESCRIPTOR_TYPE_SAMPLER];
-        }
-    }
-    else if(basic_type == "block") {
-        ++m_descriptor_pool[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER];
-    }
+    const auto desc_type = getDescriptorType(type);
+    if(desc_type != VK_DESCRIPTOR_TYPE_MAX_ENUM)
+        ++m_descriptor_pool[desc_type];
     j["basic_type"] = type.getBasicTypeString().c_str();
 }
 
@@ -151,9 +147,9 @@ void ShaderDescriptor::writeAttributesJSON(const glslang::TProgram& program, JSO
         writeBasicType(attri_json, *type);
         attri_json["vector_size"] = type->getVectorSize();
 
-        const auto& qualifier = type->getQualifier();
-        setQualifier(qualifier, attri_json);
+        setQualifier(type, attri_json, program.getAttributeName(i));
 
+        const auto& qualifier = type->getQualifier();
         if (qualifier.layoutPushConstant == false) {
             attributes_json[program.getAttributeName(i)] = attri_json;
         }
@@ -176,9 +172,9 @@ void ShaderDescriptor::writeUniformBlocksJSON(const glslang::TProgram& program, 
         const auto& type = program.getUniformBlockTType(i);
         writeBasicType(uniform_blk_json, *type);
 
-        const auto& qualifier = type->getQualifier();
-        setQualifier(qualifier, uniform_blk_json);
+        setQualifier(type, uniform_blk_json, program.getUniformBlockName(i));
 
+        const auto& qualifier = type->getQualifier();
         auto offset = program.getUniformBufferOffset(i);
         if (offset >= 0 && qualifier.layoutPushConstant == false) {
             uniform_blk_json["offset"] = offset;
@@ -224,12 +220,31 @@ void ShaderDescriptor::writeUniformVariablesJSON(const glslang::TProgram& progra
             uniform_var_json["offset"] = offset;
         }
 
-        const auto& qualifier = type->getQualifier();
-        setQualifier(qualifier, uniform_var_json);
+        setQualifier(type, uniform_var_json, program.getUniformName(i));
 
         uniform_variables_json[program.getUniformName(i)] = uniform_var_json;
     }
     if (uniform_vars_size > 0)
         config_json["uniform_variables"] = uniform_variables_json;
     m_uniform_variables_count += uniform_vars_size;
+}
+
+VkDescriptorType ShaderDescriptor::getDescriptorType(const glslang::TType& type)
+{
+    VkDescriptorType ret = VK_DESCRIPTOR_TYPE_MAX_ENUM;
+    std::string basic_type(type.getBasicTypeString().c_str());
+    std::size_t found = basic_type.find("sampler");
+    if (found != std::string::npos) {
+        const auto sampler = type.getSampler();
+        if (sampler.combined) {
+            ret = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        }
+        else {
+            ret = VK_DESCRIPTOR_TYPE_SAMPLER;
+        }
+    }
+    else if (basic_type == "block") {
+        ret = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    }
+    return ret;
 }

@@ -24,12 +24,13 @@ public:
     void writeFile(std::string filename);
 
 private:
-    void setQualifier(const glslang::TQualifier& qualifier, JSON& json);
+    void setQualifier(const glslang::TType* type, JSON& json, const char* variable_name);
     int getTypeDef(const bool vulkan_def, const int attri_type);
     void writeBasicType(JSON& j, const glslang::TType& type);
     void writeAttributesJSON(const glslang::TProgram& program, JSON& config_json, const bool vulkan_def);
     void writeUniformBlocksJSON(const glslang::TProgram& program, JSON& config_json);
     void writeUniformVariablesJSON(const glslang::TProgram& program, JSON& config_json);
+    VkDescriptorType getDescriptorType(const glslang::TType& type);
 
     JSON m_base;
     uint32_t m_attributes_count = 0;
@@ -39,4 +40,5 @@ private:
     JSON m_push_constants;
     std::vector<uint32_t> m_descriptor_pool;
     std::vector<glslang::TProgram*> dummy_programs;
+    JSON m_bindings;
 };
